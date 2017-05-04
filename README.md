@@ -1,6 +1,6 @@
 # Merciless-Mod-2
-1. Master Branch = Decompiled Source Files.
-2. Game Files Branch = Compiled Game Files, ready for game usage.
+* Master Branch = Decompiled Source Files.
+* Game Files Branch = Compiled Game Files, ready for game usage.
                 
                 Development Team:
 1. PlusIce (username: PlusIce4 [GitHub]) = Lead Developer, Senior Programmer.
