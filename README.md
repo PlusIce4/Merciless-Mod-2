@@ -3,8 +3,8 @@
 2. Game Files Branch = Compiled Game Files, ready for game usage.
                 
                 Development Team:
-PlusIce (username: PlusIce4 [GitHub]) = Lead Developer, Senior Programmer.
-Bloodlust = Retired Co-Developer
+1. PlusIce (username: PlusIce4 [GitHub]) = Lead Developer, Senior Programmer.
+2. Bloodlust = Retired Co-Developer
                 
                 Branch Infomation:
 Current State of Master Branch is unstable as I'm changing the whole paradigm or method of how the scripts define and excuted themselves. In it way it's a major rewrite. That's why I posted them early to save my work.
