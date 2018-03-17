@@ -1,8 +1,11 @@
 /**************************************************************************
 MERCILESS MOD 2 V3.4+
-Developed by PlusIce (current), Merciless Mod Team (previous work)
-See credits.txt for complete works cited
+Current Work by PlusIce (Github: PlusIce4)
+Previous Work by Merciless Mod Team (v2.0), Bloodlust (v3.3)
+See works cited for full credits
+(https://github.com/PlusIce4/Merciless-Mod-2)
 **************************************************************************/
+#include _mc2\_playermodels; 
 
 init()
 {
@@ -16,7 +19,7 @@ init()
 	level._sprottext = (&"Spawn Protected: ^3");	
 
 }
-spawnPlayer()
+ProtectSpawnPlayer()
 {
 	if(level.scr_spawnprotect)
 		self thread spawnprotect();
@@ -73,4 +76,22 @@ watchWeaponUsage()
 
 	//self iprintlnbold("You Are No Longer Protected");	
 	self notify("killprotection");
+}
+nozombie()
+{
+	for(;;)
+	{
+		wait .05;
+		player = getentarray("player", "classname");
+		for(i = 0; i < player.size; i++)
+		{
+			h=player[i].health;	
+			if(h<0)
+			{
+				player[i].suicide=1;
+				player[i] suicide();
+				break;
+			}
+		}
+	}
 }

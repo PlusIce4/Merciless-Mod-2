@@ -1,18 +1,10 @@
-/*-------------------------------------------
- __  __
-||\\//|| E R C I L E S S  2
-|| \/ ||
----------------------------
-(www.mercilessmod.com)
-----------------------
-Initialize Merciless2 and precache
-all the goodies which are needed
----------------------------------
-Updated July 2015
-Ditched Adding MG thing back idea
--------------------------------------
-Will remove MG stuff later
--------------------------------------------*/
+/**************************************************************************
+MERCILESS MOD 2 V3.4+
+Current Work by PlusIce (Github: PlusIce4)
+Previous Work by Merciless Mod Team (v2.0), Bloodlust (v3.3)
+See works cited for full credits
+(https://github.com/PlusIce4/Merciless-Mod-2)
+**************************************************************************/
 
 init()
 {

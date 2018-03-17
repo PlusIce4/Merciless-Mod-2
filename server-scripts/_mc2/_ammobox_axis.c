@@ -1,6 +1,6 @@
 main()
 {				
-	if(self.pers["class"]!="support" || !self.ammoboxcount)
+	if(self.pers["pClass"]!="support" || !self.ammoboxcount)
 		return;
 		
 	if(isDefined(self.isHoldingAmmo))
@@ -16,7 +16,7 @@ main()
 	angle = int(self.angles[1])+180;
 	
 	ammobox = spawn("script_model", (endOrigin[0],endOrigin[1],self.origin[2]+30));
-	ammobox setmodel("xmodel/axis_ammobox1");
+	ammobox setmodel ("xmodel/axis_ammobox1");
 	ammobox.angles = (0,angle-180,0);
 	ammobox.targetname="ammo";
 	ammobox.owner=self;
@@ -68,7 +68,6 @@ main()
 	ammobox thread giveAmmo();
 	ammobox thread timer();
 }
-
 timer()
 {
 	self endon("delete_ammo");
@@ -88,6 +87,9 @@ timer()
 
 giveAmmo()
 {
+	if(isdefined(self.pers["team"]) && self.pers["team"] != "axis")
+		return;
+
 	self endon("delete_ammo");
 		
 	for(;;)

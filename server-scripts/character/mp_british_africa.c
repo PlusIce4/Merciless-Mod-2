@@ -1,14 +1,12 @@
-/*-------------------------------------------
- __  __
-||\\//|| E R C I L E S S  2
-|| \/ || 
---------------------------- 
-(www.mercilessmod.com)
-----------------------
-Updated July 2015 by PlusIce
-Merciless Gore Mod Removed
-Unneeded Braces gone
--------------------------------------------*/
+/**************************************************************************
+MERCILESS MOD 2 V3.4+
+Current Work by PlusIce (Github: PlusIce4)
+Previous Work by Merciless Mod Team (v2.0), Bloodlust (v3.3)
+See works cited for full credits
+(https://github.com/PlusIce4/Merciless-Mod-2)
+**************************************************************************/
+#include _mc2\_playermodels;
+
 main()
 {
 	if(isdefined(self.pers["pClass"]))
@@ -39,7 +37,6 @@ main()
 	self.deathsound="generic_death_british_"+zahl;
 	self.bleedpain = "generic_pain_british_"+zahl;
 	self.nationality = game["allies"];
-	self.body_gib="xmodel/blood_chunk2";
 
 	self setModel(self.bodyModel);
 	self attach(self.headmodel,"",true);
@@ -56,7 +53,6 @@ precache()
 	precacheModel("xmodel/head_british_boon");	
 	precacheModel("xmodel/helmet_british_afrca");
 	precacheModel("xmodel/viewmodel_hands_british_bare");
-	precacheModel("xmodel/blood_chunk2");
 }
 
 head()

@@ -1,30 +1,35 @@
 /**************************************************************************
 MERCILESS MOD 2 V3.4+
-Developed by PlusIce (current), Merciless Mod Team (previous work)
-See credits.txt for complete works cited
+Current Work by PlusIce (Github: PlusIce4)
+Previous Work by Merciless Mod Team (v2.0), Bloodlust (v3.3)
+See works cited for full credits
+(https://github.com/PlusIce4/Merciless-Mod-2)
 **************************************************************************/
-
 #include _mc2\_cd;
 #include _mc2\_punishments;
 
 init()
 {
 	// Anti teamkilling
-	level.awe_teamkillmax		= cvardef("awe_teamkill_max", 3, 0, 99, "int");
+	level.mc2_teamkillmax		= cvardef("mc2_teamkill_max", 3, 0, 99, "int");
 
-	if(!level.awe_teamkillmax) return;
+	if(!level.mc2_teamkillmax) return;
 
-	level.awe_teamkillwarn		= cvardef("awe_teamkill_warn", 1, 0, 99, "int");
-	level.awe_teamkillmethod	= cvardef("awe_teamkill_method", 3, 0, level.awe_punishments+1, "int");
-	level.awe_teamkillreflect	= cvardef("awe_teamkill_reflect", 1, 0, 1, "int");
-	level.awe_teamkillmsg 		= cvardef("awe_teamkill_msg","^6Good damnit! ^7Learn the difference between ^4friend ^7and ^1foe ^7you bastard!.","","","string");
+	level.mc2_teamkillwarn		= cvardef("mc2_teamkill_warn", 1, 0, 99, "int");
+	level.mc2_teamkillmethod	= cvardef("mc2_teamkill_method", 3, 0, level.mc2_punishments+1, "int");
+	level.mc2_teamkillreflect	= cvardef("mc2_teamkill_reflect", 1, 0, 1, "int");
+	level.mc2_teamkillmsg 		= cvardef("mc2_teamkill_msg","^6Good damnit! ^7Learn the difference between ^4friend ^7and ^1foe ^7you bastard!.","","","string");
+}
+DontShoot() //warn players to stop friendly fire
+{
+	self playsound(self.nationality + "_Hold_Fire");
 }
 PlayerDamage(eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeapon, vPoint, vDir, sHitLoc, psOffsetTime)
 {
 	// Stop damage from teamkiller
-	if(level.awe_teamplay && isPlayer(eAttacker) && (self != eAttacker) && (self.pers["team"] == eAttacker.pers["team"]))
+	if(level.mc2_teamplay && isPlayer(eAttacker) && (self != eAttacker) && (self.pers["team"] == eAttacker.pers["team"]))
 	{
-		if(eAttacker.pers["awe_teamkiller"])
+		if(eAttacker.pers["mc2_teamkiller"])
 		{
 			eAttacker.friendlydamage = true;
 			iDamage = int(iDamage * .5);
@@ -47,39 +52,40 @@ PlayerDamage(eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeapon, vP
 
 Cleanup()
 {
-	if(!isdefined(self.pers["awe_teamkills"]))	self.pers["awe_teamkills"] = 0;
-	if(!isdefined(self.pers["awe_teamkiller"]))	self.pers["awe_teamkiller"] = false;
+	if(!isdefined(self.pers["mc2_teamkills"]))	self.pers["mc2_teamkills"] = 0;
+	if(!isdefined(self.pers["mc2_teamkiller"]))	self.pers["mc2_teamkiller"] = false;
 }
 
 TeamKill()
 {
-	if (!level.awe_teamkillmax)
+	if (!level.mc2_teamkillmax)
 		return;
 
 	// Increase value
-	self.pers["awe_teamkills"]++;
+	self.pers["mc2_teamkills"]++;
 	
 	// Check if it reached or passed the max level
-	if (self.pers["awe_teamkills"]>=level.awe_teamkillmax)
+	if (self.pers["mc2_teamkills"]>=level.mc2_teamkillmax)
 	{
-		if(level.awe_teamkillmethod)
-			iprintln(self.name + " ^7has killed ^1" + self.pers["awe_teamkills"] + " ^7teammate(s) and will be punished.");
-		if(level.awe_teamkillreflect)
-			iprintln(self.name + " ^7has killed ^1" + self.pers["awe_teamkills"] + " ^7teammate(s) and will reflect damage.");
+		if(level.mc2_teamkillmethod)
+			iprintln(self.name + " ^7has killed ^1" + self.pers["mc2_teamkills"] + " ^7teammate(s) and will be punished.");
+		if(level.mc2_teamkillreflect)
+			iprintln(self.name + " ^7has killed ^1" + self.pers["mc2_teamkills"] + " ^7teammate(s) and will reflect damage.");
 
-		self iprintlnbold(level.awe_teamkillmsg);
-		self thread PunishMe(level.awe_teamkillmethod, "teamkilling");
-		if(level.awe_teamkillreflect)
-			self.pers["awe_teamkiller"] = true;
+		self iprintlnbold(level.mc2_teamkillmsg);
+		self thread PunishMe(level.mc2_teamkillmethod, "teamkilling");
+		self thread DontShoot();
+		if(level.mc2_teamkillreflect)
+			self.pers["mc2_teamkiller"] = true;
 	}
 	// Check if it reached or passed the warning level
-	else if (self.pers["awe_teamkills"]>=level.awe_teamkillwarn)
+	else if (self.pers["mc2_teamkills"]>=level.mc2_teamkillwarn)
 	{
-		if(level.awe_teamkillmethod)
-			self iprintlnbold(level.awe_teamkillmax - self.pers["awe_teamkills"] + " ^7more teamkill(s) and you will be ^1punished^7!");
-		else if(level.awe_teamkillreflect)
-			self iprintlnbold(level.awe_teamkillmax - self.pers["awe_teamkills"] + " ^7more teamkill(s) and you will reflect damage!");
+		if(level.mc2_teamkillmethod)
+			self iprintlnbold(level.mc2_teamkillmax - self.pers["mc2_teamkills"] + " ^7more teamkill(s) and you will be ^1punished^7!");
+		else if(level.mc2_teamkillreflect)
+			self iprintlnbold(level.mc2_teamkillmax - self.pers["mc2_teamkills"] + " ^7more teamkill(s) and you will reflect damage!");
 		else 
-			self iprintlnbold(level.awe_teamkillmax - self.pers["awe_teamkills"] + " ^7more teamkill(s) and nothing will happen!");
+			self iprintlnbold(level.mc2_teamkillmax - self.pers["mc2_teamkills"] + " ^7more teamkill(s) and nothing will happen!");
 	}
 }

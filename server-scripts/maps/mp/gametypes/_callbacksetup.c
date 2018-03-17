@@ -77,9 +77,8 @@ Setup any misc callbacks stuff like defines and default callbacks
 SetupCallbacks()
 {
 
-//// Added for AWE ////
-//	awe\_callbacks::init();
-///////////////////////
+	// MERCILESS
+	_mc2\_callbacks::init();
 
 	SetDefaultCallbacks();
 	

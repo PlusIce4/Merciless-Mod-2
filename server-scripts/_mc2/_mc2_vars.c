@@ -1,12 +1,11 @@
-/*-------------------------------------------
- __  __
-||\\//|| E R C I L E S S  2
-|| \/ || 
---------------------------- 
-(www.mercilessmod.com)
-----------------------
-Initialize the cvars used by Merciless
--------------------------------------------*/
+/**************************************************************************
+MERCILESS MOD 2 V3.4+
+Current Work by PlusIce (Github: PlusIce4)
+Previous Work by Merciless Mod Team (v2.0), Bloodlust (v3.3)
+See works cited for full credits
+(https://github.com/PlusIce4/Merciless-Mod-2)
+**************************************************************************/
+
 initialize_cvars()
 {
 	if (getcvar("hud_fade_compass") != "0")
@@ -117,15 +116,11 @@ initialize_cvars()
 		
 	if(getcvar("scr_biggrenades") == "")
 		setcvar("scr_biggrenades","1");
-
-	if(getcvar("scr_testclients") == "")
-		setcvar("scr_testclients","0");
 		
 	if(getcvar("scr_payload_artillery") == "")
 		setcvar("scr_payload_artillery","1");	
 	
 	level.scr_payload_artillery = getcvarint ("scr_payload_artillery");	
-	level.scr_testclients = getcvarint ("scr_testclients");
 	level.scr_biggrenades = getcvarint ("scr_biggrenades");
 	level.scr_extragrenades =getcvarint ("scr_extragrenades");
 	level.scr_gasgrenades = getcvarint ("scr_gasgrenades");

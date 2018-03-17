@@ -1,70 +1,21 @@
-/*
-	Deathmatch
-	Updated for V3.4 Public Beta
-	Objective: 	Score points by eliminating other players
-	Map ends:	When one player reaches the score limit, or time limit is reached
-	Respawning:	No wait / Away from other players
+/**************************************************************************
+MERCILESS MOD 2 V3.4+
+Current Work by PlusIce (Github: PlusIce4)
+Previous Work by Merciless Mod Team (v2.0), Bloodlust (v3.3)
+See works cited for full credits
+(https://github.com/PlusIce4/Merciless-Mod-2)
+**************************************************************************/
+//Deathmatch Gametype (revised)
 
-	Level requirements
-	------------------
-		Spawnpoints:
-			classname		mp_dm_spawn
-			All players spawn from these. The spawnpoint chosen is dependent on the current locations of enemies at the time of spawn.
-			Players generally spawn away from enemies.
+#include _mc2\_cd;
+#include _mc2\_iprint;
 
-		Spectator Spawnpoints:
-			classname		mp_global_intermission
-			Spectators spawn from these and intermission is viewed from these positions.
-			Atleast one is required, any more and they are randomly chosen between.
-
-	Level script requirements
-	-------------------------
-		Team Definitions:
-			game["allies"] = "american";
-			game["axis"] = "german";
-			Because Deathmatch doesn't have teams with regard to gameplay or scoring, this effectively sets the available weapons.
-
-		If using minefields or exploders:
-			maps\mp\_load::main();
-
-	Optional level script settings
-	------------------------------
-		Soldier Type and Variation:
-			game["american_soldiertype"] = "normandy";
-			game["german_soldiertype"] = "normandy";
-			This sets what character models are used for each nationality on a particular map.
-
-			Valid settings:
-				american_soldiertype	normandy
-				british_soldiertype		normandy, africa
-				russian_soldiertype		coats, padded
-				german_soldiertype		normandy, africa, winterlight, winterdark
-*/
 
 /*QUAKED mp_dm_spawn (1.0 0.5 0.0) (-16 -16 0) (16 16 72)
 Players spawn away from enemies at one of these positions.*/
 
 main()
 {
-	//[Merciless2]///////////////////////////////
-	_mc2\_mc2_player::_mc2_StartGameType();
-	// SOLDIERS
-	if (getcvar("scr_soldier_ratio") != "100" )
-		setcvar ("scr_soldier_ratio","100");
-	// MEDIC
-	if (getcvar("scr_medic_ratio") != "100" )
-		setcvar ("scr_medic_ratio","100");
-	// SNIPERS
-	if (getcvar("scr_sniper_ratio") != "100" )
-		setcvar ("scr_sniper_ratio","100");
-	// ENINEER
-	if (getcvar("scr_engineer_ratio") != "100" )
-		setcvar ("scr_engineer_ratio","100");
-	// SUPPORT
-	if (getcvar("scr_support_ratio") != "100" )
-		setcvar ("scr_support_ratio","100");
-	/////////////////////////////////////////////
-	
 	level.callbackStartGameType = ::Callback_StartGameType;
 	level.callbackPlayerConnect = ::Callback_PlayerConnect;
 	level.callbackPlayerDisconnect = ::Callback_PlayerDisconnect;
@@ -91,12 +42,14 @@ Callback_StartGameType()
 		game["axis"] = "german";
 
 	// server cvar overrides
-	if(getCvar("scr_allies") != "")
-		game["allies"] = getCvar("scr_allies");
-	if(getCvar("scr_axis") != "")
-		game["axis"] = getCvar("scr_axis");
+	allies = cvardef ("scr_allies", "", "", "", "string");
+	if (allies != "")
+		game["allies"] = allies;
+	axis = cvardef ("scr_axis", "", "", "", "string");
+	if (axis != "")
+		game["axis"] = axis;
 
-	//precacheStatusIcon("hud_status_dead");
+	precacheStatusIcon("hud_status_dead");
 	precacheStatusIcon("hud_status_connecting");
 	precacheRumble("damage_heavy");
 	precacheString(&"PLATFORM_PRESS_TO_SPAWN");
@@ -111,7 +64,7 @@ Callback_StartGameType()
 	thread maps\mp\gametypes\_shellshock::init();
 	thread maps\mp\gametypes\_hud_playerscore::init();
 	thread maps\mp\gametypes\_deathicons::init();
-//	thread maps\mp\gametypes\_damagefeedback::init();
+	thread maps\mp\gametypes\_damagefeedback::init();
 	thread maps\mp\gametypes\_healthoverlay::init();
 	thread maps\mp\gametypes\_grenadeindicators::init();
 
@@ -139,24 +92,17 @@ Callback_StartGameType()
 	maps\mp\gametypes\_gameobjects::main(allowed);
 
 	// Time limit per map
-	if(getCvar("scr_dm_timelimit") == "")
-		setCvar("scr_dm_timelimit", "30");
-	else if(getCvarFloat("scr_dm_timelimit") > 1440)
-		setCvar("scr_dm_timelimit", "1440");
-	level.timelimit = getCvarFloat("scr_dm_timelimit");
+	level.timelimit = cvardef ("scr_dm_timelimit", 30, 0, 1440, "float");
 	setCvar("ui_dm_timelimit", level.timelimit);
 	makeCvarServerInfo("ui_dm_timelimit", "30");
 
 	// Score limit per map
-	if(getCvar("scr_dm_scorelimit") == "")
-		setCvar("scr_dm_scorelimit", "100");
-	level.scorelimit = getCvarInt("scr_dm_scorelimit");
+	level.scorelimit = cvardef ("scr_dm_scorelimit", 100, 0, 9999, "int");
 	setCvar("ui_dm_scorelimit", level.scorelimit);
 	makeCvarServerInfo("ui_dm_scorelimit", "100");
 
 	// Force respawning
-	if(getCvar("scr_forcerespawn") == "")
-		setCvar("scr_forcerespawn", "0");
+	level.forcerespawn = cvardef ("scr_forcerespawn", 0, 0, 1, "int");
 
 	if(!isdefined(game["state"]))
 		game["state"] = "playing";
@@ -166,10 +112,6 @@ Callback_StartGameType()
 
 	thread startGame();
 	thread updateGametypeCvars();
-	//[Merciless2]///////////////////////////////
-	if((getcvar("developer") == "0")&&(isdefined(getcvar("scr_testclients"))))
-		thread maps\mp\gametypes\_teams::addTestClients();
-	/////////////////////////////////////////////
 }
 
 dummy()
@@ -191,7 +133,7 @@ Callback_PlayerConnect()
 	level notify("connected", self);
 
 	if(!level.splitscreen)
-		iprintln(&"MP_CONNECTED", self);
+		iprintlnFIXED (&"MP_CONNECTED", self);
 
 	lpselfnum = self getEntityNumber();
 	lpselfguid = self getGuid();
@@ -257,7 +199,7 @@ Callback_PlayerConnect()
 Callback_PlayerDisconnect()
 {
 	if(!level.splitscreen)
-		iprintln(&"MP_DISCONNECTED", self);
+		iprintlnFIXED (&"MP_DISCONNECTED", self);
 
 	if(isdefined(self.clientid))
 		setplayerteamrank(self, self.clientid, 0);
@@ -271,58 +213,7 @@ Callback_PlayerDamage(eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sW
 {
 	if(self.sessionteam == "spectator")
 		return;
-	//[Merciless2]///////////////////////////////
-	//[Merciless2]///////////////////////////////
-	if(isdefined(self.protected))return;
-	if(isDefined(sWeapon) && sWeapon == "axisgas_mp"||sWeapon == "alliedgas_mp")
-	{
-			if(sWeapon == "alliedgas_mp" && sMeansOfDeath != "MOD_MELEE")
-			{
-				if (!isDefined(vPoint))
-					vPoint = self.origin + (0,0,11);
-				if(isDefined(level.mustardgas) && level.mustardgas == vPoint)
-					return;
-				level.mustardgas = vPoint;
-				level thread _mc2\_mc2_mcFX::AlliedMonitorMustardGas(eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeapon, level.mustardgas, vDir, sHitLoc, psOffsetTime);
-				return;
-			}
-			else if(sWeapon == "axisgas_mp" && sMeansOfDeath != "MOD_MELEE")
-			{
-				if (!isDefined(vPoint))
-				vPoint = self.origin + (0,0,11);
-				if(isDefined(level.mustardgas) && level.mustardgas == vPoint)
-				return;
-				level.mustardgas = vPoint;
-				level thread _mc2\_mc2_mcFX::AlliedMonitorMustardGas(eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeapon, level.mustardgas, vDir, sHitLoc, psOffsetTime);
-				return;
 
-			}
-	}
-	if(isDefined(sWeapon) && sWeapon == "fire_mp"||sWeapon == "axisfire_mp")
-	{
-		if(sWeapon == "axisfire_mp" && sMeansOfDeath != "MOD_MELEE")
-		{
-				if (!isDefined(vPoint))
-				vPoint = self.origin + (0,0,11);
-				if(isDefined(level.cocktail) && level.cocktail == vPoint)
-				return;
-				level.cocktail = vPoint;
-				level thread _mc2\_mc2_mcFX::AxisMonitorCocktail(eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeapon, level.cocktail, vDir, sHitLoc, psOffsetTime);
-				return;
-	}
-	else if(sWeapon == "fire_mp" && sMeansOfDeath != "MOD_MELEE")
-	{
-				if (!isDefined(vPoint))
-				vPoint = self.origin + (0,0,11);
-				if(isDefined(level.cocktail) && level.cocktail == vPoint)
-				return;
-				level.cocktail = vPoint;
-				level thread _mc2\_mc2_mcFX::AlliedMonitorCocktail(eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeapon, level.cocktail, vDir, sHitLoc, psOffsetTime);
-				return;
-	}
-}
-
-	/////////////////////////////////////////////
 	// Don't do knockback if the damage direction was not specified
 	if(!isdefined(vDir))
 		iDFlags |= level.iDFLAGS_NO_KNOCKBACK;
@@ -337,39 +228,15 @@ Callback_PlayerDamage(eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sW
 		println("client:" + self getEntityNumber() + " health:" + self.health +
 			" damage:" + iDamage + " hitLoc:" + sHitLoc);
 	}
-	//[Merciless2]///////////////////////////////
-	if(!isDefined(self.thrown))
-	{
-		self _mc2\_mc2_player::_mc2_PlayerDamage(eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeapon, vPoint, vDir, sHitLoc, psOffsetTime);
-		// Apply the damage to the player
-		self finishPlayerDamage(eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeapon, vPoint, vDir, sHitLoc, psOffsetTime);
-	}
+
+	// Apply the damage to the player
+	self finishPlayerDamage(eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeapon, vPoint, vDir, sHitLoc, psOffsetTime);
+
 	// Shellshock/Rumble
-	if(level.scr_shellshock==1)//-[Meciless2]
-	{
-		self thread maps\mp\gametypes\_shellshock::shellshockOnDamage(sMeansOfDeath, iDamage);
-		self playrumble("damage_heavy");
-	}
-	if(level.scr_shellshock==2)
-		self thread _mc2\_mc2_mcFx::shockFX(sHitLoc, sWeapon, iDamage , sMeansOfDeath);
-		
-	if(self.sessionstate != "dead" )
-		self _mc2\_mc2_gore::PlayerPain(eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeapon, vPoint, vDir, sHitLoc,psOffsetTime);
-
-	if(self.sessionstate != "dead" && (sMeansOfDeath == "MOD_GRENADE_SPLASH" || sMeansOfDeath == "MOD_PROJECTILE_SPLASH") && level.scr_forceprone )
-	{
-		if(iDamage > 70 )
-		{		
-			_mc2\_mc2_util::forceto("prone");
-			self dropItem(self getcurrentweapon());
-		}
-		else if(iDamage > 40 && iDamage < 71)
-			_mc2\_mc2_util::forceto("prone");
-
-	}
-	/////////////////////////////////////////////
-	//if(isdefined(eAttacker) && eAttacker != self)
-	//	eAttacker thread maps\mp\gametypes\_damagefeedback::updateDamageFeedback();
+	self thread maps\mp\gametypes\_shellshock::shellshockOnDamage(sMeansOfDeath, iDamage);
+	self playrumble("damage_heavy");
+	if(isdefined(eAttacker) && eAttacker != self)
+		eAttacker thread maps\mp\gametypes\_damagefeedback::updateDamageFeedback();
 
 	if(self.sessionstate != "dead")
 	{
@@ -400,10 +267,6 @@ Callback_PlayerDamage(eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sW
 
 Callback_PlayerKilled(eInflictor, attacker, iDamage, sMeansOfDeath, sWeapon, vDir, sHitLoc, psOffsetTime, deathAnimDuration)
 {
-	//[Merciless2]///////////////////////////////
-	// Notify Death thread
-	self notify ("TimeToDie",attacker);
-	/////////////////////////////////////////////
 	self endon("spawned");
 	self notify("killed_player");
 
@@ -414,20 +277,14 @@ Callback_PlayerKilled(eInflictor, attacker, iDamage, sMeansOfDeath, sWeapon, vDi
 	if(sHitLoc == "head" && sMeansOfDeath != "MOD_MELEE")
 		sMeansOfDeath = "MOD_HEAD_SHOT";
 
-	//[Merciless2]///////////////////////////////
-	_mc2\_mc2_player::_mc2_PlayerKilled(eInflictor, attacker, iDamage, sMeansOfDeath, sWeapon, vDir, sHitLoc, psOffsetTime, deathAnimDuration);
-	/////////////////////////////////////////////
-
 	// send out an obituary message to all clients about the kill
-	if(level.scr_obituary)//-[Merciless2]
-		obituary(self, attacker, sWeapon, sMeansOfDeath);
+	obituary(self, attacker, sWeapon, sMeansOfDeath);
 
 	self maps\mp\gametypes\_weapons::dropWeapon();
 	self maps\mp\gametypes\_weapons::dropOffhand();
 
 	self.sessionstate = "dead";
-	//self.statusicon = "hud_status_dead";
-	self.statusicon = "";
+	self.statusicon = "hud_status_dead";
 
 	if(!isdefined(self.switching_teams))
 		self.deaths++;
@@ -447,9 +304,6 @@ Callback_PlayerKilled(eInflictor, attacker, iDamage, sMeansOfDeath, sWeapon, vDi
 
 			if(!isdefined(self.switching_teams))
 				attacker.score--;
-			//[Merciless2]
-			//_mc2\_mc2_gore::kamikaze(eInflictor, attacker, iDamage, sMeansOfDeath, sWeapon, vDir, sHitLoc, psOffsetTime, deathAnimDuration);
-
 		}
 		else
 		{
@@ -490,30 +344,10 @@ Callback_PlayerKilled(eInflictor, attacker, iDamage, sMeansOfDeath, sWeapon, vDi
 	self.leaving_team = undefined;
 
 	body = self cloneplayer(deathAnimDuration);
-	//thread maps\mp\gametypes\_deathicons::addDeathicon(body, self.clientid, self.pers["team"]);
-	//[Merciless2]///////////////////////////////
-	//body setmodel (self.model);
-	body.targetname="body";
-	wait 0.5;
-	if(isdefined(self.isonfire)&&self.isonfire==1)
-	{
-		if(isdefined(sWeapon)&&sWeapon=="fire_mp" &&sWeapon == "axisfire_mp")
-			body thread _mc2\_mc2_gore::BurnBody();
-		else
-			body thread _mc2\_mc2_gore::BurnBody2();
-	}
+	thread maps\mp\gametypes\_deathicons::addDeathicon(body, self.clientid, self.pers["team"]);
 
 	delay = 2;	// Delay the player becoming a spectator till after he's done dying
 	wait delay;	// ?? Also required for Callback_PlayerKilled to complete before respawn/killcam can execute
-	
-	if(level.scr_bloodpools)
-	{
-		if(!isdefined(self.isonfire))
-			{
-			playfx (level._effect["bloodpools_body"], body.origin);
-			}
-		}
-	/////////////////////////////////////////////
 
 	if(doKillcam && level.killcam)
 		self maps\mp\gametypes\_killcam::killcam(attackerNum, delay, psOffsetTime, true);
@@ -542,9 +376,6 @@ spawnPlayer()
 	self.maxhealth = 100;
 	self.health = self.maxhealth;
 
-	//-[Merciless2]
-	self _mc2\_mc2_player::_mc2_InitPlayer();
-
 	spawnpointname = "mp_dm_spawn";
 	spawnpoints = getentarray(spawnpointname, "classname");
 	spawnpoint = maps\mp\gametypes\_spawnlogic::getSpawnpoint_DM(spawnpoints);
@@ -554,11 +385,10 @@ spawnPlayer()
 	else
 		maps\mp\_utility::error("NO " + spawnpointname + " SPAWNPOINTS IN MAP");
 
-	//-[Merciless2]
 	if(!isdefined(self.pers["savedmodel"]))
-		_mc2\_mc2_util::model();	
+		maps\mp\gametypes\_teams::model();
 	else
-		_mc2\_mc2_util::loadModel(self.pers["savedmodel"]);
+		maps\mp\_utility::loadModel(self.pers["savedmodel"]);
 
 	maps\mp\gametypes\_weapons::givePistol();
 	maps\mp\gametypes\_weapons::giveGrenades();
@@ -580,13 +410,13 @@ spawnPlayer()
 
 	waittillframeend;
 	self notify("spawned_player");
-	//[Merciless2]///////////////////////////////
-	self thread _mc2\_mc2_player::_mc2_spawnPlayer();
-	/////////////////////////////////////////////
 }
 
 spawnSpectator(origin, angles)
 {
+	//MERCILESS
+	_mc2\_player::spawnSpectator();
+	
 	self notify("spawned");
 	self notify("end_respawn");
 
@@ -618,12 +448,6 @@ spawnSpectator(origin, angles)
 	}
 
 	self setClientCvar("cg_objectiveText", "");
-	//[Merciless2]///////////////////////////////
-	self _mc2\_mc2_util::resetHUD();
-	self _mc2\_mc2_util::hud_playerdeath();
-	if(isDefined(self.sprot))
-		self.sprot destroy();
-	/////////////////////////////////////////////
 }
 
 spawnIntermission()
@@ -658,7 +482,7 @@ respawn()
 
 	self endon("end_respawn");
 
-	if(getCvarInt("scr_forcerespawn") <= 0)
+	if (level.forcerespawn <= 0)
 	{
 		self thread waitRespawnButton();
 		self waittill("respawn");
@@ -728,7 +552,7 @@ startGame()
 		level.clock.x = 8;
 		level.clock.y = 2;
 		level.clock.font = "default";
-		level.clock.fontscale = 2-0.7;
+		level.clock.fontscale = 2;
 		level.clock setTimer(level.timelimit * 60);
 	}
 
@@ -741,6 +565,9 @@ startGame()
 
 endMap()
 {
+	//MERCILESS
+	_mc2\_player::endMap();
+
 	game["state"] = "intermission";
 	level notify("intermission");
 
@@ -872,15 +699,9 @@ updateGametypeCvars()
 {
 	for(;;)
 	{
-		timelimit = getCvarFloat("scr_dm_timelimit");
+		timelimit = cvardef ("scr_dm_timelimit", 30, 0, 1440, "float");
 		if(level.timelimit != timelimit)
 		{
-			if(timelimit > 1440)
-			{
-				timelimit = 1440;
-				setCvar("scr_dm_timelimit", "1440");
-			}
-
 			level.timelimit = timelimit;
 			setCvar("ui_dm_timelimit", level.timelimit);
 			level.starttime = getTime();
@@ -895,7 +716,7 @@ updateGametypeCvars()
 					level.clock.x = 8;
 					level.clock.y = 2;
 					level.clock.font = "default";
-					level.clock.fontscale = 2-0.7;
+					level.clock.fontscale = 2;
 				}
 				level.clock setTimer(level.timelimit * 60);
 			}
@@ -908,7 +729,7 @@ updateGametypeCvars()
 			checkTimeLimit();
 		}
 
-		scorelimit = getCvarInt("scr_dm_scorelimit");
+		scorelimit = cvardef ("scr_dm_scorelimit", 100, 0, 9999, "int");
 		if(level.scorelimit != scorelimit)
 		{
 			level.scorelimit = scorelimit;

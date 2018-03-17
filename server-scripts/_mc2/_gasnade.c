@@ -1,7 +1,9 @@
 /**************************************************************************
 MERCILESS MOD 2 V3.4+
-Developed by PlusIce (current), Merciless Mod Team (previous work)
-See credits.txt for complete works cited
+Current Work by PlusIce (Github: PlusIce4)
+Previous Work by Merciless Mod Team (v2.0), Bloodlust (v3.3)
+See works cited for full credits
+(https://github.com/PlusIce4/Merciless-Mod-2)
 **************************************************************************/
 /* -----------------------------------------------------
 SHELLSHOCK OF VARIOUS TYPES
@@ -14,12 +16,11 @@ sMOD = Means of Death
 #include _mc2\_cd;
 #include _mc2\_forceto;
 #include _mc2\_painsounds;
+#include maps\mp\gametypes\_weapons;
 
 
-PlayerDamage(eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeapon, vPoint, vDir, sHitLoc, psOffsetTime)
-{
-
-	//[Merciless2]///////////////////////////////
+GasPlayerDamage(vPoint, eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeapon, level.mustardgas, vDir, sHitLoc, psOffsetTime)
+{	
 	if(isdefined(self.protected))return;
 	if(isDefined(sWeapon) && sWeapon == "axisgas_mp"||sWeapon == "alliedgas_mp" && sMeansOfDeath != "MOD_MELEE")
 	{
@@ -86,7 +87,6 @@ shockFX(sLOC, sWPN, sDMG , sMOD)
 		wait(sDMG * .025);
 	}
 }
-//Begin split
 /* ----------------------------------------------------- 
    CREATE THE AREA EFFECT 
    AND DAMAGE FOR THE MUSTARD GAS 

@@ -1,6 +1,6 @@
 main()
 {				
-	if(self.pers["class"]!="medic" || !self.medkitcount)
+	if(self.pers["pClass"]!="medic" || !self.medkitcount)
 		return;
 		
 	if(isDefined(self.isHoldingMedkit))
@@ -93,6 +93,9 @@ timer()
 
 giveHealth()
 {
+	if(isdefined(self.pers["team"]) && self.pers["team"] != "axis")
+		return;
+		
 	self endon("delete_medkit");
 		
 	for(;;)

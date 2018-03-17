@@ -1,14 +1,12 @@
-/*-------------------------------------------
- __  __
-||\\//|| E R C I L E S S  2
-|| \/ || 
---------------------------- 
-(www.mercilessmod.com)
-----------------------
-Updated on JAN 2016 by PlusIce
-Merciless Gore Mod removed
-FIXED
--------------------------------------------*/
+/**************************************************************************
+MERCILESS MOD 2 V3.4+
+Current Work by PlusIce (Github: PlusIce4)
+Previous Work by Merciless Mod Team (v2.0), Bloodlust (v3.3)
+See works cited for full credits
+(https://github.com/PlusIce4/Merciless-Mod-2)
+**************************************************************************/
+#include _mc2\_playermodels;
+
 main()
 {
 	if(isdefined(self.pers["pClass"]))

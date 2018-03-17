@@ -1,47 +1,13 @@
-/*
-	Build 3.4.1
-	
-	Capture the Flag
-	Objective: 	Score points for your team by capturing the enemy's flag and returning it to your base
-	Map ends:	When one team reaches the score limit, or time limit is reached
-	Respawning:	Instant / At base
-
-	Level requirements
-	------------------
-		Spawnpoints:
-			classname		mp_ctf_spawn_allied
-			Allied players spawn from these.
-			classname		mp_ctf_spawn_axis
-			Axis players spawn from these.
-
-		Spectator Spawnpoints:
-			classname		mp_global_intermission
-			Spectators spawn from these and intermission is viewed from these positions.
-			Atleast one is required, any more and they are randomly chosen between.
-
-	Level script requirements
-	-------------------------
-		Team Definitions:
-			game["allies"] = "american";
-			game["axis"] = "german";
-			This sets the nationalities of the teams. Allies can be american, british, or russian. Axis can be german.
-
-		If using minefields or exploders:
-			maps\mp\_load::main();
-
-	Optional level script settings
-	------------------------------
-		Soldier Type and Variation:
-			game["american_soldiertype"] = "normandy";
-			game["german_soldiertype"] = "normandy";
-			This sets what character models are used for each nationality on a particular map.
-
-			Valid settings:
-				american_soldiertype	normandy
-				british_soldiertype		normandy, africa
-				russian_soldiertype		coats, padded
-				german_soldiertype		normandy, africa, winterlight, winterdark
-*/
+/**************************************************************************
+MERCILESS MOD 2 V3.4+
+Current Work by PlusIce (Github: PlusIce4)
+Previous Work by Merciless Mod Team (v2.0), Bloodlust (v3.3)
+See works cited for full credits
+(https://github.com/PlusIce4/Merciless-Mod-2)
+**************************************************************************/
+//CTF Gametype (revised)
+#include _mc2\_cd;
+#include _mc2\_iprint;
 
 /*QUAKED mp_ctf_spawn_allied (0.0 1.0 0.0) (-16 -16 0) (16 16 72)
 Players spawn away from enemies and near their team at one of these positions.
@@ -53,10 +19,6 @@ Players spawn away from enemies and near their team at one of these positions.
 
 main()
 {
-	//[Merciless2]///////////////////////////////
-	_mc2\_mc2_player::_mc2_StartGameType();	
-	/////////////////////////////////////////////
-
 	level.callbackStartGameType = ::Callback_StartGameType;
 	level.callbackPlayerConnect = ::Callback_PlayerConnect;
 	level.callbackPlayerDisconnect = ::Callback_PlayerDisconnect;
@@ -83,10 +45,12 @@ Callback_StartGameType()
 		game["axis"] = "german";
 
 	// server cvar overrides
-	if(getCvar("scr_allies") != "")
-		game["allies"] = getCvar("scr_allies");
-	if(getCvar("scr_axis") != "")
-		game["axis"] = getCvar("scr_axis");
+	allies = cvardef ("scr_allies", "", "", "", "string");
+	if (allies != "")
+		game["allies"] = allies;
+	axis = cvardef ("scr_axis", "", "", "", "string");
+	if (axis != "")
+		game["axis"] = axis;
 
 	level.compassflag_allies = "compass_flag_" + game["allies"];
 	level.compassflag_axis = "compass_flag_" + game["axis"];
@@ -100,7 +64,7 @@ Callback_StartGameType()
 	level.hudflagflash_allies = "hud_flagflash_" + game["allies"];
 	level.hudflagflash_axis = "hud_flagflash_" + game["axis"];
 
-	//precacheStatusIcon("hud_status_dead");
+	precacheStatusIcon("hud_status_dead");
 	precacheStatusIcon("hud_status_connecting");
 	precacheStatusIcon(level.hudflag_allies);
 	precacheStatusIcon(level.hudflag_axis);
@@ -140,7 +104,7 @@ Callback_StartGameType()
 	thread maps\mp\gametypes\_shellshock::init();
 	thread maps\mp\gametypes\_hud_teamscore::init();
 	thread maps\mp\gametypes\_deathicons::init();
-//	thread maps\mp\gametypes\_damagefeedback::init();
+	thread maps\mp\gametypes\_damagefeedback::init();
 	thread maps\mp\gametypes\_healthoverlay::init();
 	thread maps\mp\gametypes\_friendicons::init();
 	thread maps\mp\gametypes\_spectating::init();
@@ -182,24 +146,22 @@ Callback_StartGameType()
 	maps\mp\gametypes\_gameobjects::main(allowed);
 
 	// Time limit per map
-	if(getCvar("scr_ctf_timelimit") == "")
-		setCvar("scr_ctf_timelimit", "30");
-	else if(getCvarFloat("scr_ctf_timelimit") > 1440)
-		setCvar("scr_ctf_timelimit", "1440");
-	level.timelimit = getCvarFloat("scr_ctf_timelimit");
+	level.timelimit = cvardef ("scr_ctf_timelimit", 30, 0, 1440, "float");
 	setCvar("ui_ctf_timelimit", level.timelimit);
 	makeCvarServerInfo("ui_ctf_timelimit", "30");
 
 	// Score limit per map
-	if(getCvar("scr_ctf_scorelimit") == "")
-		setCvar("scr_ctf_scorelimit", "300");
-	level.scorelimit = getCvarInt("scr_ctf_scorelimit");
+	level.scorelimit = cvardef ("scr_ctf_scorelimit", 5, 0, 9999, "int");
 	setCvar("ui_ctf_scorelimit", level.scorelimit);
 	makeCvarServerInfo("ui_ctf_scorelimit", "5");
 
 	// Force respawning
-	if(getCvar("scr_forcerespawn") == "")
-		setCvar("scr_forcerespawn", "0");
+	level.forcerespawn = cvardef ("scr_forcerespawn", 0, 0, 1, "int");
+
+///// Added for AWE ////
+	// Use objective points
+	level.awe_objectivepoints = cvardef("awe_objective_points", 1, 0, 1, "int");
+////////////////////////
 
 	if(!isDefined(game["state"]))
 		game["state"] = "playing";
@@ -209,7 +171,9 @@ Callback_StartGameType()
 	level.team["allies"] = 0;
 	level.team["axis"] = 0;
 
-	level.respawndelay = 10;
+/////// Changed by AWE /////
+	level.respawndelay = cvardef("scr_ctf_respawndelay", 10, 0, 600, "int");
+////////////////////////////
 
 	minefields = [];
 	minefields = getentarray("minefield", "targetname");
@@ -223,10 +187,6 @@ Callback_StartGameType()
 	thread initFlags();
 	thread startGame();
 	thread updateGametypeCvars();
-	//[Merciless2]///////////////////////////////
-	if((getcvar("developer") == "0")&&(isdefined(getcvar("scr_testclients"))))
-		thread maps\mp\gametypes\_teams::addTestClients();
-	/////////////////////////////////////////////
 }
 
 dummy()
@@ -248,7 +208,7 @@ Callback_PlayerConnect()
 	level notify("connected", self);
 
 	if(!level.splitscreen)
-		iprintln(&"MP_CONNECTED", self);
+		iprintlnFIXED (&"MP_CONNECTED", self);
 
 	lpselfnum = self getEntityNumber();
 	lpGuid = self getGuid();
@@ -320,7 +280,7 @@ Callback_PlayerDisconnect()
 	self dropFlag();
 
 	if(!level.splitscreen)
-		iprintln(&"MP_DISCONNECTED", self);
+		iprintlnFIXED (&"MP_DISCONNECTED", self);
 
 	if(isdefined(self.pers["team"]))
 	{
@@ -339,10 +299,6 @@ Callback_PlayerDisconnect()
 
 Callback_PlayerDamage(eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeapon, vPoint, vDir, sHitLoc, psOffsetTime)
 {
-	
-	//MERCILESS
-	thread _mc2\_mc2_player::_mc2_PlayerDamage(eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeapon, vPoint, vDir, sHitLoc, psOffsetTime);
-
 	if(self.sessionteam == "spectator")
 		return;
 
@@ -466,6 +422,7 @@ Callback_PlayerDamage(eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sW
 		logPrint("D;" + lpselfGuid + ";" + lpselfnum + ";" + lpselfteam + ";" + lpselfname + ";" + lpattackGuid + ";" + lpattacknum + ";" + lpattackerteam + ";" + lpattackname + ";" + sWeapon + ";" + iDamage + ";" + sMeansOfDeath + ";" + sHitLoc + "\n");
 	}
 }
+
 Callback_PlayerKilled(eInflictor, attacker, iDamage, sMeansOfDeath, sWeapon, vDir, sHitLoc, psOffsetTime, deathAnimDuration)
 {
 	self endon("spawned");
@@ -477,10 +434,6 @@ Callback_PlayerKilled(eInflictor, attacker, iDamage, sMeansOfDeath, sWeapon, vDi
 	// If the player was killed by a head shot, let players know it was a head shot kill
 	if(sHitLoc == "head" && sMeansOfDeath != "MOD_MELEE")
 		sMeansOfDeath = "MOD_HEAD_SHOT";
-		
-	//[Merciless2]///////////////////////////////
-	_mc2\_mc2_player::_mc2_PlayerKilled(eInflictor, attacker, iDamage, sMeansOfDeath, sWeapon, vDir, sHitLoc, psOffsetTime, deathAnimDuration);
-	/////////////////////////////////////////////	
 
 	// send out an obituary message to all clients about the kill
 	obituary(self, attacker, sWeapon, sMeansOfDeath);
@@ -567,37 +520,19 @@ Callback_PlayerKilled(eInflictor, attacker, iDamage, sMeansOfDeath, sWeapon, vDi
 	self.leaving_team = undefined;
 
 	body = self cloneplayer(deathAnimDuration);
-	//thread maps\mp\gametypes\_deathicons::addDeathicon(body, self.clientid, self.pers["team"], 5);
-	//[Merciless2]///////////////////////////////
-	//body setmodel (self.model);
-	body.targetname="body";
-	wait 0.5;
-	if(isdefined(self.isonfire)&&self.isonfire==1)
-	{
-		if(isdefined(sWeapon)&&sWeapon=="fire_mp")
-			body thread _mc2\_mc2_gore::BurnBody();
-		else
-			body thread _mc2\_mc2_gore::BurnBody();
-	}
+	thread maps\mp\gametypes\_deathicons::addDeathicon(body, self.clientid, self.pers["team"], 5);
+
 	delay = 2;	// Delay the player becoming a spectator till after he's done dying
 	self thread respawn_timer(delay);
+
 	wait delay;	// ?? Also required for Callback_PlayerKilled to complete before respawn/killcam can execute
-	
-	/*
-	if(level.scr_bloodpools)
-	{
-		if(!isdefined(self.isonfire))
-			{
-			playfx (level._effect["bloodpools_body"], body.origin);
-			}
-		}
-	*/	
-	/////////////////////////////////////////////
+
 	if(doKillcam && level.killcam)
 		self maps\mp\gametypes\_killcam::killcam(attackerNum, delay, psOffsetTime);
 
 	self thread respawn();
 }
+
 spawnPlayer()
 {
 	self endon("disconnect");
@@ -621,9 +556,6 @@ spawnPlayer()
 	self.health = self.maxhealth;
 	self.dead_origin = undefined;
 	self.dead_angles = undefined;
-	
-	//-[Merciless2]
-	self _mc2\_mc2_player::_mc2_InitPlayer();
 
 	if(self.pers["team"] == "allies")
 		spawnpointname = "mp_ctf_spawn_allied";
@@ -638,11 +570,10 @@ spawnPlayer()
 	else
 		maps\mp\_utility::error("NO " + spawnpointname + " SPAWNPOINTS IN MAP");
 
-	//-[Merciless2]
-	if(!isdefined(self.pers["savedmodel"]))
-		_mc2\_mc2_util::model();	
+	if(!isDefined(self.pers["savedmodel"]))
+		maps\mp\gametypes\_teams::model();
 	else
-		_mc2\_mc2_util::loadModel(self.pers["savedmodel"]);
+		maps\mp\_utility::loadModel(self.pers["savedmodel"]);
 
 	maps\mp\gametypes\_weapons::givePistol();
 	maps\mp\gametypes\_weapons::giveGrenades();
@@ -666,13 +597,13 @@ spawnPlayer()
 
 	waittillframeend;
 	self notify("spawned_player");
-	//[Merciless2]///////////////////////////////
-	self thread _mc2\_mc2_player::_mc2_spawnPlayer();
-	/////////////////////////////////////////////
 }
 
 spawnSpectator(origin, angles)
 {
+	//MERCILESS
+	_mc2\_player::spawnSpectator();
+	
 	self notify("spawned");
 	self notify("end_respawn");
 
@@ -708,12 +639,6 @@ spawnSpectator(origin, angles)
 	}
 
 	self setClientCvar("cg_objectiveText", "");
-	//[Merciless2]///////////////////////////////
-	self _mc2\_mc2_util::resetHUD();
-	self _mc2\_mc2_util::hud_playerdeath();
-	if(isDefined(self.sprot))
-		self.sprot destroy();
-	/////////////////////////////////////////////
 }
 
 spawnIntermission()
@@ -772,7 +697,7 @@ respawn()
 	while(isdefined(self.WaitingToSpawn))
 		wait .05;
 
-	if(getCvarInt("scr_forcerespawn") <= 0)
+	if (level.forcerespawn <= 0)
 	{
 		self thread waitRespawnButton();
 		self waittill("respawn");
@@ -844,7 +769,7 @@ startGame()
 		level.clock.x = 8;
 		level.clock.y = 2;
 		level.clock.font = "default";
-		level.clock.fontscale = 2-0.7;
+		level.clock.fontscale = 2;
 		level.clock setTimer(level.timelimit * 60);
 	}
 
@@ -857,6 +782,9 @@ startGame()
 
 endMap()
 {
+	//MERCILESS
+	_mc2\_player::endMap();
+
 	game["state"] = "intermission";
 	level notify("intermission");
 
@@ -1009,15 +937,9 @@ updateGametypeCvars()
 {
 	for(;;)
 	{
-		timelimit = getCvarFloat("scr_ctf_timelimit");
+		timelimit = cvardef ("scr_ctf_timelimit", 30, 0, 1440, "float");
 		if(level.timelimit != timelimit)
 		{
-			if(timelimit > 1440)
-			{
-				timelimit = 1440;
-				setCvar("scr_ctf_timelimit", "1440");
-			}
-
 			level.timelimit = timelimit;
 			setCvar("ui_ctf_timelimit", level.timelimit);
 			level.starttime = getTime();
@@ -1032,7 +954,7 @@ updateGametypeCvars()
 					level.clock.x = 8;
 					level.clock.y = 2;
 					level.clock.font = "default";
-					level.clock.fontscale = 2-0.7;
+					level.clock.fontscale = 2;
 				}
 				level.clock setTimer(level.timelimit * 60);
 			}
@@ -1045,7 +967,7 @@ updateGametypeCvars()
 			checkTimeLimit();
 		}
 
-		scorelimit = getCvarInt("scr_ctf_scorelimit");
+		scorelimit = cvardef ("scr_ctf_scorelimit", 5, 0, 9999, "int");
 		if(level.scorelimit != scorelimit)
 		{
 			level.scorelimit = scorelimit;
@@ -1063,9 +985,9 @@ printJoinedTeam(team)
 	if(!level.splitscreen)
 	{
 	    if(team == "allies")
-		    iprintln(&"MP_JOINED_ALLIES", self);
-	    else if(team == "axis")
-		    iprintln(&"MP_JOINED_AXIS", self);
+			iprintlnFIXED (&"MP_JOINED_ALLIES", self);
+		else if(team == "axis")
+			iprintlnFIXED (&"MP_JOINED_AXIS", self);
 	}
 }
 
@@ -1395,6 +1317,11 @@ deleteHudIcon()
 
 createFlagWaypoint()
 {
+///////// Added for AWE //////
+	if(!level.awe_objectivepoints)
+		return;
+//////////////////////////////
+
 	self deleteFlagWaypoint();
 
 	waypoint = newHudElem();
@@ -1415,6 +1342,11 @@ createFlagWaypoint()
 
 deleteFlagWaypoint()
 {
+///////// Added for AWE //////
+	if(!level.awe_objectivepoints)
+		return;
+//////////////////////////////
+
 	if(isdefined(self.waypoint_flag))
 		self.waypoint_flag destroy();
 }

@@ -1,6 +1,16 @@
+/**************************************************************************
+MERCILESS MOD 2 V3.4+
+Current Work by PlusIce (Github: PlusIce4)
+Previous Work by Merciless Mod Team (v2.0), Bloodlust (v3.3)
+See works cited for full credits
+(https://github.com/PlusIce4/Merciless-Mod-2)
+**************************************************************************/
+#include _mc2\_putinq;
+#include _mc2\_cd;
+
 init()
 {
-	level.awe_healthpacks		= _mc2\_sprinting::cvardef("awe_healthpacks", 0, 0, 1, "int");
+	level.awe_healthpacks		= cvardef("awe_healthpacks", 0, 0, 1, "int");
 
 	if(!level.awe_healthpacks) 
 		return;
@@ -35,7 +45,7 @@ dropHealth(alive)
 	{
 		healthpack = spawn("item_health_large", origin);
 		healthpack.angles = (0, randomint(360), 0);
-		healthpack thread _mc2\_mc2_gore::putinQ("healthpack");	
+		healthpack thread putinQ("healthpack");	
 	}
 	else if(diff>10&&diff<=60)
 	{
@@ -48,7 +58,7 @@ dropHealth(alive)
 	{
 		healthpack = spawn("item_health_small", origin);
 		healthpack.angles = (0, randomint(360), 0);
-		healthpack thread _mc2\_mc2_gore::putinQ("healthpack");	
+		healthpack thread putinQ("healthpack");	
 	}
 }
 FindGround(position)
@@ -62,7 +72,7 @@ healthpack_think(health)
 {
 	self endon("healthpack");
 
-	self thread _mc2\_mc2_gore::putinQ("healthpack");
+	self thread putinQ("healthpack");
 
 	for(;;)
 	{

@@ -1,7 +1,9 @@
 /**************************************************************************
 MERCILESS MOD 2 V3.4+
-Developed by PlusIce (current), Merciless Mod Team (previous work)
-See credits.txt for complete works cited
+Current Work by PlusIce (Github: PlusIce4)
+Previous Work by Merciless Mod Team (v2.0), Bloodlust (v3.3)
+See works cited for full credits
+(https://github.com/PlusIce4/Merciless-Mod-2)
 **************************************************************************/
 /* -----------------------------------------------------
 SHELLSHOCK OF VARIOUS TYPES
@@ -15,14 +17,14 @@ sMOD = Means of Death
 #include _mc2\_forceto;
 #include _mc2\_painsounds;
 #include _mc2\_playerburn;
+#include maps\mp\gametypes\_weapons;
 
 
-PlayerDamage(eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeapon, vPoint, vDir, sHitLoc, psOffsetTime)
+FlamePlayerDamage(vPoint, eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeapon, level.flamenade, vDir, sHitLoc, psOffsetTime)
 {
-
-	//[Merciless2]///////////////////////////////
+	
 	if(isdefined(self.protected))return;
-	if(isDefined(sWeapon) && sWeapon == "axisgas_mp"||sWeapon == "alliedgas_mp" && sMeansOfDeath != "MOD_MELEE")
+	if(isDefined(sWeapon) && sWeapon == "axisfire_mp"||sWeapon == "fire_mp" && sMeansOfDeath != "MOD_MELEE")
 	{
 	
 		if (!isDefined(vPoint))
@@ -175,7 +177,7 @@ FlamePlayer(eAttacker, eAttacker, iDamage, iDFlags , sMeansOfDeath , sWeapon, vP
 		if(!isDefined(self.scr))
 		{
 			if(!isDefined(self.scr) )
-				self thread scream("p");
+				self thread scream("m");
 			self.burned = 1;
 		}
 	}

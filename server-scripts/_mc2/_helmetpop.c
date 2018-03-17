@@ -1,11 +1,14 @@
 /**************************************************************************
 MERCILESS MOD 2 V3.4+
-Developed by PlusIce (current), Merciless Mod Team (previous work)
-See credits.txt for complete works cited
+Current Work by PlusIce (Github: PlusIce4)
+Previous Work by Merciless Mod Team (v2.0), Bloodlust (v3.3)
+See works cited for full credits
+(https://github.com/PlusIce4/Merciless-Mod-2)
 **************************************************************************/
 #include _mc2\_painsounds;
+#include _mc2\_bounceobject;
 
-PlayerDamage(eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeapon, vPoint, vDir, sHitLoc, psOffsetTime)
+HelmetPlayerDamage(sHitLoc, sMeansOfDeath, self.helm, vPoint, self.curhat, iDamage, "death", org, ch, vDir, model)
 {
 
 	if(sHitLoc=="helmet")
@@ -30,6 +33,7 @@ PlayerDamage(eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeapon, vP
 }
 popHelm(org,ch,vDir,model,iDamage)
 {
+	
 	if(self.helm==1)return;
 	self notify("helm_wech");
 	if (isDefined (org))

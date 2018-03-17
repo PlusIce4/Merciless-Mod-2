@@ -1,56 +1,19 @@
-/*
-	Build 3.4.1
-	
-	Team Deathmatch
-	Objective: 	Score points for your team by eliminating players on the opposing team
-	Map ends:	When one team reaches the score limit, or time limit is reached
-	Respawning:	No wait / Near teammates
-
-	Level requirements
-	------------------
-		Spawnpoints:
-			classname		mp_tdm_spawn
-			All players spawn from these. The spawnpoint chosen is dependent on the current locations of teammates and enemies
-			at the time of spawn. Players generally spawn behind their teammates relative to the direction of enemies.
-
-		Spectator Spawnpoints:
-			classname		mp_global_intermission
-			Spectators spawn from these and intermission is viewed from these positions.
-			Atleast one is required, any more and they are randomly chosen between.
-
-	Level script requirements
-	-------------------------
-		Team Definitions:
-			game["allies"] = "american";
-			game["axis"] = "german";
-			This sets the nationalities of the teams. Allies can be american, british, or russian. Axis can be german.
-
-		If using minefields or exploders:
-			maps\mp\_load::main();
-
-	Optional level script settings
-	------------------------------
-		Soldier Type and Variation:
-			game["american_soldiertype"] = "normandy";
-			game["german_soldiertype"] = "normandy";
-			This sets what character models are used for each nationality on a particular map.
-
-			Valid settings:
-				american_soldiertype	normandy
-				british_soldiertype		normandy, africa
-				russian_soldiertype		coats, padded
-				german_soldiertype		normandy, africa, winterlight, winterdark
-*/
+/**************************************************************************
+MERCILESS MOD 2 V3.4+
+Current Work by PlusIce (Github: PlusIce4)
+Previous Work by Merciless Mod Team (v2.0), Bloodlust (v3.3)
+See works cited for full credits
+(https://github.com/PlusIce4/Merciless-Mod-2)
+**************************************************************************/
+//Team Deathmatch Gametype (revised)
+#include _mc2/_cd;
+#include _mc2/_iprint;
 
 /*QUAKED mp_tdm_spawn (0.0 0.0 1.0) (-16 -16 0) (16 16 72)
 Players spawn away from enemies and near their team at one of these positions.*/
 
 main()
 {
-	//[Merciless2]///////////////////////////////
-	_mc2\_mc2_player::_mc2_StartGameType();	
-	/////////////////////////////////////////////
-
 	level.callbackStartGameType = ::Callback_StartGameType;
 	level.callbackPlayerConnect = ::Callback_PlayerConnect;
 	level.callbackPlayerDisconnect = ::Callback_PlayerDisconnect;
@@ -77,12 +40,14 @@ Callback_StartGameType()
 		game["axis"] = "german";
 
 	// server cvar overrides
-	if(getCvar("scr_allies") != "")
-		game["allies"] = getCvar("scr_allies");
-	if(getCvar("scr_axis") != "")
-		game["axis"] = getCvar("scr_axis");
+	allies = cvardef ("scr_allies", "", "", "", "string");
+	if (allies != "")
+		game["allies"] = allies;
+	axis = cvardef ("scr_axis", "", "", "", "string");
+	if (axis != "")
+		game["axis"] = axis;
 
-	//precacheStatusIcon("hud_status_dead");
+	precacheStatusIcon("hud_status_dead");
 	precacheStatusIcon("hud_status_connecting");
 	precacheRumble("damage_heavy");
 	precacheString(&"PLATFORM_PRESS_TO_SPAWN");
@@ -97,7 +62,7 @@ Callback_StartGameType()
 	thread maps\mp\gametypes\_shellshock::init();
 	thread maps\mp\gametypes\_hud_teamscore::init();
 	thread maps\mp\gametypes\_deathicons::init();
-//	thread maps\mp\gametypes\_damagefeedback::init();
+	thread maps\mp\gametypes\_damagefeedback::init();
 	thread maps\mp\gametypes\_healthoverlay::init();
 	thread maps\mp\gametypes\_friendicons::init();
 	thread maps\mp\gametypes\_spectating::init();
@@ -127,24 +92,17 @@ Callback_StartGameType()
 	maps\mp\gametypes\_gameobjects::main(allowed);
 
 	// Time limit per map
-	if(getCvar("scr_tdm_timelimit") == "")
-		setCvar("scr_tdm_timelimit", "30");
-	else if(getCvarFloat("scr_tdm_timelimit") > 1440)
-		setCvar("scr_tdm_timelimit", "1440");
-	level.timelimit = getCvarFloat("scr_tdm_timelimit");
+	level.timelimit = cvardef ("scr_tdm_timelimit", 30, 0, 1440, "float");
 	setCvar("ui_tdm_timelimit", level.timelimit);
 	makeCvarServerInfo("ui_tdm_timelimit", "30");
 
 	// Score limit per map
-	if(getCvar("scr_tdm_scorelimit") == "")
-		setCvar("scr_tdm_scorelimit", "300");
-	level.scorelimit = getCvarInt("scr_tdm_scorelimit");
+	level.scorelimit = cvardef ("scr_tdm_scorelimit", 300, 0, 9999, "int");
 	setCvar("ui_tdm_scorelimit", level.scorelimit);
 	makeCvarServerInfo("ui_tdm_scorelimit", "300");
 
 	// Force respawning
-	if(getCvar("scr_forcerespawn") == "")
-		setCvar("scr_forcerespawn", "0");
+	level.forcerespawn = cvardef ("scr_forcerespawn", 0, 0, 1, "int");
 
 	if(!isDefined(game["state"]))
 		game["state"] = "playing";
@@ -156,11 +114,6 @@ Callback_StartGameType()
 
 	thread startGame();
 	thread updateGametypeCvars();
-
-	//[Merciless2]///////////////////////////////
-	if((getcvar("developer") == "0")&&(isdefined(getcvar("scr_testclients"))))
-		thread maps\mp\gametypes\_teams::addTestClients();
-	/////////////////////////////////////////////
 }
 
 dummy()
@@ -182,7 +135,7 @@ Callback_PlayerConnect()
 	level notify("connected", self);
 
 	if(!level.splitscreen)
-		iprintln(&"MP_CONNECTED", self);
+		iprintlnFIXED (&"MP_CONNECTED", self);
 
 	lpselfnum = self getEntityNumber();
 	lpGuid = self getGuid();
@@ -209,7 +162,7 @@ Callback_PlayerConnect()
 			self.sessionteam = "allies";
 		else
 			self.sessionteam = "axis";
-			
+
 		if(isDefined(self.pers["weapon"]))
 			spawnPlayer();
 		else
@@ -252,7 +205,7 @@ Callback_PlayerConnect()
 Callback_PlayerDisconnect()
 {
 	if(!level.splitscreen)
-		iprintln(&"MP_DISCONNECTED", self);
+		iprintlnFIXED (&"MP_DISCONNECTED", self);
 
 	if(isdefined(self.pers["team"]))
 	{
@@ -271,9 +224,6 @@ Callback_PlayerDisconnect()
 
 Callback_PlayerDamage(eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeapon, vPoint, vDir, sHitLoc, psOffsetTime)
 {
-	//MERCILESS
-	thread _mc2\_mc2_player::_mc2_PlayerDamage(eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeapon, vPoint, vDir, sHitLoc, psOffsetTime);
-	
 	if(self.sessionteam == "spectator")
 		return;
 
@@ -400,35 +350,28 @@ Callback_PlayerDamage(eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sW
 
 Callback_PlayerKilled(eInflictor, attacker, iDamage, sMeansOfDeath, sWeapon, vDir, sHitLoc, psOffsetTime, deathAnimDuration)
 {
-	//[Merciless2]///////////////////////////////
-	// Notify Death thread
-	self notify ("TimeToDie",attacker);
-	/////////////////////////////////////////////
 	self endon("spawned");
 	self notify("killed_player");
+
 	if(self.sessionteam == "spectator")
 		return;
 
 	// If the player was killed by a head shot, let players know it was a head shot kill
 	if(sHitLoc == "head" && sMeansOfDeath != "MOD_MELEE")
 		sMeansOfDeath = "MOD_HEAD_SHOT";
-	//[Merciless2]///////////////////////////////
-	_mc2\_mc2_player::_mc2_PlayerKilled(eInflictor, attacker, iDamage, sMeansOfDeath, sWeapon, vDir, sHitLoc, psOffsetTime, deathAnimDuration);
-	/////////////////////////////////////////////
+
 	// send out an obituary message to all clients about the kill
-	if(level.scr_obituary)//-[Merciless2]
-		obituary(self, attacker, sWeapon, sMeansOfDeath);
+	obituary(self, attacker, sWeapon, sMeansOfDeath);
 
 	self maps\mp\gametypes\_weapons::dropWeapon();
 	self maps\mp\gametypes\_weapons::dropOffhand();
 
 	self.sessionstate = "dead";
-	//self.statusicon = "hud_status_dead";
-	self.statusicon = "";
-	
+	self.statusicon = "hud_status_dead";
+
 	if(!isdefined(self.switching_teams))
 		self.deaths++;
-			
+
 	lpselfnum = self getEntityNumber();
 	lpselfname = self.name;
 	lpselfguid = self getGuid();
@@ -455,9 +398,6 @@ Callback_PlayerKilled(eInflictor, attacker, iDamage, sMeansOfDeath, sWeapon, vDi
 						attacker.score--;
 				}
 			}
-			//[Merciless2]
-			//else
-			//	_mc2\_mc2_gore::kamikaze(eInflictor, attacker, iDamage, sMeansOfDeath, sWeapon, vDir, sHitLoc, psOffsetTime, deathAnimDuration);
 
 			if(isdefined(attacker.friendlydamage))
 				attacker iprintln(&"MP_FRIENDLY_FIRE_WILL_NOT");
@@ -507,31 +447,13 @@ Callback_PlayerKilled(eInflictor, attacker, iDamage, sMeansOfDeath, sWeapon, vDi
 	self.switching_teams = undefined;
 	self.joining_team = undefined;
 	self.leaving_team = undefined;
+
 	body = self cloneplayer(deathAnimDuration);
-	//thread maps\mp\gametypes\_deathicons::addDeathicon(body, self.clientid, self.pers["team"], 5);
-	//[Merciless2]///////////////////////////////
-	//body setmodel (self.model);
-	body.targetname="body";
-	wait 0.5;
-	if(isdefined(self.isonfire)&&self.isonfire==1)
-	{
-		if(isdefined(sWeapon)&&sWeapon=="fire_mp")
-			body thread _mc2\_mc2_gore::BurnBody();
-		else if(isdefined(sWeapon)&&sWeapon=="axisfire_mp")
-			body thread _mc2\_mc2_gore::BurnBody();	
-	}
+	thread maps\mp\gametypes\_deathicons::addDeathicon(body, self.clientid, self.pers["team"], 5);
 
 	delay = 2;	// Delay the player becoming a spectator till after he's done dying
 	wait delay;	// ?? Also required for Callback_PlayerKilled to complete before respawn/killcam can execute
-	/////////////////////////////////////////////
-	
-	if(level.scr_bloodpools)
-	{
-		if(!isdefined(self.isonfire))
-			{
-			playfx (level._effect["bloodpools_body"], body.origin);
-			}
-		}
+
 	if(doKillcam && level.killcam)
 		self maps\mp\gametypes\_killcam::killcam(attackerNum, delay, psOffsetTime, true);
 
@@ -560,22 +482,19 @@ spawnPlayer()
 	self.health = self.maxhealth;
 	self.friendlydamage = undefined;
 
-	//-[Merciless2]
-	self _mc2\_mc2_player::_mc2_InitPlayer();
-
 	spawnpointname = "mp_tdm_spawn";
 	spawnpoints = getentarray(spawnpointname, "classname");
 	spawnpoint = maps\mp\gametypes\_spawnlogic::getSpawnpoint_NearTeam(spawnpoints);
 
 	if(isDefined(spawnpoint))
-		self spawn(spawnpoint.origin, spawnpoint.angles);
+		self spawn (origin, angles);
 	else
 		maps\mp\_utility::error("NO " + spawnpointname + " SPAWNPOINTS IN MAP");
-	//-[Merciless2]
-	if(!isdefined(self.pers["savedmodel"]))
-		_mc2\_mc2_util::model();	
+
+	if(!isDefined(self.pers["savedmodel"]))
+		maps\mp\gametypes\_teams::model();
 	else
-		_mc2\_mc2_util::loadModel(self.pers["savedmodel"]);
+		maps\mp\_utility::loadModel(self.pers["savedmodel"]);
 
 	maps\mp\gametypes\_weapons::givePistol();
 	maps\mp\gametypes\_weapons::giveGrenades();
@@ -595,15 +514,15 @@ spawnPlayer()
 	else
 		self setClientCvar("cg_objectiveText", &"MP_ELIMINATE_THE_ENEMY");
 
-	waittillframeend; 
+	waittillframeend;
 	self notify("spawned_player");
-	//[Merciless2]///////////////////////////////
-	self thread _mc2\_mc2_player::_mc2_spawnPlayer();
-	/////////////////////////////////////////////
 }
 
 spawnSpectator(origin, angles)
 {
+	//MERCILESS
+	_mc2\_player::spawnSpectator();
+	
 	self notify("spawned");
 	self notify("end_respawn");
 
@@ -639,13 +558,6 @@ spawnSpectator(origin, angles)
 	}
 
 	self setClientCvar("cg_objectiveText", "");
-
-	//[Merciless2]///////////////////////////////
-	self _mc2\_mc2_util::resetHUD();
-	self _mc2\_mc2_util::hud_playerdeath();
-	if(isDefined(self.sprot))
-		self.sprot destroy();
-	/////////////////////////////////////////////
 }
 
 spawnIntermission()
@@ -682,7 +594,7 @@ respawn()
 
 	self endon("end_respawn");
 
-	if(getCvarInt("scr_forcerespawn") <= 0)
+	if (level.forcerespawn <= 0)
 	{
 		self thread waitRespawnButton();
 		self waittill("respawn");
@@ -751,7 +663,7 @@ startGame()
 		level.clock.x = 8;
 		level.clock.y = 2;
 		level.clock.font = "default";
-		level.clock.fontscale = 2-0.7;
+		level.clock.fontscale = 2;
 		level.clock setTimer(level.timelimit * 60);
 	}
 
@@ -764,6 +676,9 @@ startGame()
 
 endMap()
 {
+	//MERCILESS
+	_mc2\_player::endMap();
+
 	game["state"] = "intermission";
 	level notify("intermission");
 
@@ -917,15 +832,9 @@ updateGametypeCvars()
 {
 	for(;;)
 	{
-		timelimit = getCvarFloat("scr_tdm_timelimit");
+		timelimit = cvardef ("scr_tdm_timelimit", 30, 0, 1440, "float");
 		if(level.timelimit != timelimit)
 		{
-			if(timelimit > 1440)
-			{
-				timelimit = 1440;
-				setCvar("scr_tdm_timelimit", "1440");
-			}
-
 			level.timelimit = timelimit;
 			setCvar("ui_tdm_timelimit", level.timelimit);
 			level.starttime = getTime();
@@ -940,7 +849,7 @@ updateGametypeCvars()
 					level.clock.x = 8;
 					level.clock.y = 2;
 					level.clock.font = "default";
-					level.clock.fontscale = 2-0.7;
+					level.clock.fontscale = 2;
 				}
 				level.clock setTimer(level.timelimit * 60);
 			}
@@ -953,7 +862,7 @@ updateGametypeCvars()
 			checkTimeLimit();
 		}
 
-		scorelimit = getCvarInt("scr_tdm_scorelimit");
+		scorelimit = cvardef ("scr_tdm_scorelimit", 300, 0, 9999, "int");
 		if(level.scorelimit != scorelimit)
 		{
 			level.scorelimit = scorelimit;
@@ -971,9 +880,9 @@ printJoinedTeam(team)
 	if(!level.splitscreen)
 	{
 		if(team == "allies")
-			iprintln(&"MP_JOINED_ALLIES", self);
+			iprintlnFIXED (&"MP_JOINED_ALLIES", self);
 		else if(team == "axis")
-			iprintln(&"MP_JOINED_AXIS", self);
+			iprintlnFIXED (&"MP_JOINED_AXIS", self);
 	}
 }
 
@@ -984,7 +893,7 @@ menuAutoAssign()
 		self openMenu(game["menu_team"]);
 		return;
 	}
-
+	
 	numonteam["allies"] = 0;
 	numonteam["axis"] = 0;
 
@@ -993,7 +902,7 @@ menuAutoAssign()
 	{
 		player = players[i];
 
-		if(!isDefined(player.pers["team"]) || player.pers["team"] == "spectator")
+		if(!isdefined(player.pers["team"]) || player.pers["team"] == "spectator")
 			continue;
 
 		numonteam[player.pers["team"]]++;
@@ -1041,6 +950,9 @@ menuAutoAssign()
 
 	self.pers["team"] = assignment;
 	self.pers["weapon"] = undefined;
+	self.pers["weapon1"] = undefined;
+	self.pers["weapon2"] = undefined;
+	self.pers["spawnweapon"] = undefined;
 	self.pers["savedmodel"] = undefined;
 	//-[Merciless2]
 	self.pers["pClass"] = undefined;
@@ -1048,18 +960,17 @@ menuAutoAssign()
 	self setClientCvar("ui_allow_weaponchange", "1");
 
 	if(self.pers["team"] == "allies")
-	{	
+	{
 		self openMenu(game["menu_weapon_allies"]);
 		self setClientCvar("g_scriptMainMenu", game["menu_weapon_allies"]);
 	}
 	else
-	{	
+	{
 		self openMenu(game["menu_weapon_axis"]);
 		self setClientCvar("g_scriptMainMenu", game["menu_weapon_axis"]);
 	}
 
 	self notify("joined_team");
-	self notify("end_respawn");
 }
 
 menuAllies()
@@ -1082,16 +993,18 @@ menuAllies()
 
 		self.pers["team"] = "allies";
 		self.pers["weapon"] = undefined;
+		self.pers["weapon1"] = undefined;
+		self.pers["weapon2"] = undefined;
+		self.pers["spawnweapon"] = undefined;
 		self.pers["savedmodel"] = undefined;
-		//-[Merciless2]
-		self.pers["pClass"] = undefined;
+	//-[Merciless2]
+	self.pers["pClass"] = undefined;
 
 		self setClientCvar("ui_allow_weaponchange", "1");
 		self setClientCvar("g_scriptMainMenu", game["menu_weapon_allies"]);
 
 		self notify("joined_team");
-		self notify("end_respawn");
-	}		
+	}
 
 	if(!isdefined(self.pers["weapon"]))
 		self openMenu(game["menu_weapon_allies"]);
@@ -1117,15 +1030,17 @@ menuAxis()
 
 		self.pers["team"] = "axis";
 		self.pers["weapon"] = undefined;
+		self.pers["weapon1"] = undefined;
+		self.pers["weapon2"] = undefined;
+		self.pers["spawnweapon"] = undefined;
 		self.pers["savedmodel"] = undefined;
-		//-[Merciless2]
-		self.pers["pClass"] = undefined;
+	//-[Merciless2]
+	self.pers["pClass"] = undefined;
 
 		self setClientCvar("ui_allow_weaponchange", "1");
 		self setClientCvar("g_scriptMainMenu", game["menu_weapon_axis"]);
 
 		self notify("joined_team");
-		self notify("end_respawn");
 	}
 
 	if(!isdefined(self.pers["weapon"]))
@@ -1136,6 +1051,8 @@ menuSpectator()
 {
 	if(self.pers["team"] != "spectator")
 	{
+		self notify("joined_spectators");
+
 		if(isAlive(self))
 		{
 			self.switching_teams = true;
@@ -1146,6 +1063,9 @@ menuSpectator()
 
 		self.pers["team"] = "spectator";
 		self.pers["weapon"] = undefined;
+		self.pers["weapon1"] = undefined;
+		self.pers["weapon2"] = undefined;
+		self.pers["spawnweapon"] = undefined;
 		self.pers["savedmodel"] = undefined;
 		//-[Merciless2]
 		self.pers["pClass"] = undefined;
@@ -1158,14 +1078,12 @@ menuSpectator()
 			self setClientCvar("g_scriptMainMenu", game["menu_ingame_spectator"]);
 		else
 			self setClientCvar("g_scriptMainMenu", game["menu_ingame"]);
-
-		self notify("joined_spectators");
 	}
 }
 
 menuWeapon(response)
 {
-	if(!isDefined(self.pers["team"]) || (self.pers["team"] != "allies" && self.pers["team"] != "axis"))
+	if(!isdefined(self.pers["team"]) || (self.pers["team"] != "allies" && self.pers["team"] != "axis"))
 		return;
 
 	weapon = self maps\mp\gametypes\_weapons::restrictWeaponByServerCvars(response);
@@ -1185,25 +1103,133 @@ menuWeapon(response)
 	else
 		self setClientCvar("g_scriptMainMenu", game["menu_ingame"]);
 
-	if(isDefined(self.pers["weapon"]) && self.pers["weapon"] == weapon)
+	if(isdefined(self.pers["weapon"]) && self.pers["weapon"] == weapon && !isdefined(self.pers["weapon1"]))
 		return;
 
-	if(!isDefined(self.pers["weapon"]))
+	if(!game["matchstarted"])
 	{
-		self.pers["weapon"] = weapon;
-		spawnPlayer();
-		self thread printJoinedTeam(self.pers["team"]);
+		if(isdefined(self.pers["weapon"]))
+		{
+			self.pers["weapon"] = weapon;
+			self setWeaponSlotWeapon("primary", weapon);
+			self setWeaponSlotAmmo("primary", 999);
+			self setWeaponSlotClipAmmo("primary", 999);
+			self switchToWeapon(weapon);
+
+			maps\mp\gametypes\_weapons::givePistol();
+			maps\mp\gametypes\_weapons::giveGrenades();
+		}
+		else
+		{
+			self.pers["weapon"] = weapon;
+			self.spawned = undefined;
+			spawnPlayer();
+			self thread printJoinedTeam(self.pers["team"]);
+			level checkMatchStart();
+		}
+	}
+	else if(!level.roundstarted && !self.usedweapons)
+	{
+		if(isdefined(self.pers["weapon"]))
+		{
+			self.pers["weapon"] = weapon;
+			self setWeaponSlotWeapon("primary", weapon);
+			self setWeaponSlotAmmo("primary", 999);
+			self setWeaponSlotClipAmmo("primary", 999);
+			self switchToWeapon(weapon);
+
+			maps\mp\gametypes\_weapons::givePistol();
+			maps\mp\gametypes\_weapons::giveGrenades();
+			
+			spawnPlayer();
+		}
+		else
+		{
+			self.pers["weapon"] = weapon;
+			if(!level.exist[self.pers["team"]])
+			{
+				self.spawned = undefined;
+				spawnPlayer();
+				self thread printJoinedTeam(self.pers["team"]);
+				level checkMatchStart();
+			}
+			else
+			{
+				spawnPlayer();
+				self thread printJoinedTeam(self.pers["team"]);
+			}
+		}
 	}
 	else
 	{
+		if(isdefined(self.pers["weapon"]))
+			self.oldweapon = self.pers["weapon"];
+
 		self.pers["weapon"] = weapon;
+		self.sessionteam = self.pers["team"];
 
-		weaponname = maps\mp\gametypes\_weapons::getWeaponName(self.pers["weapon"]);
+		if(self.sessionstate != "playing")
+			//self.statusicon = "hud_status_dead";
+			self.statusicon = "";
 
-		if(maps\mp\gametypes\_weapons::useAn(self.pers["weapon"]))
-			self iprintln(&"MP_YOU_WILL_RESPAWN_WITH_AN", weaponname);
+		if(self.pers["team"] == "allies")
+			otherteam = "axis";
 		else
-			self iprintln(&"MP_YOU_WILL_RESPAWN_WITH_A", weaponname);
+		{
+			assert(self.pers["team"] == "axis");
+			otherteam = "allies";
+		}
+
+		// if joining a team that has no opponents, just spawn
+		if(!level.didexist[otherteam] && !level.roundended)
+		{
+			if(isdefined(self.spawned))
+			{
+				if(isdefined(self.pers["weapon"]))
+				{
+					self.pers["weapon"] = weapon;
+					self setWeaponSlotWeapon("primary", weapon);
+					self setWeaponSlotAmmo("primary", 999);
+					self setWeaponSlotClipAmmo("primary", 999);
+					self switchToWeapon(weapon);
+
+					maps\mp\gametypes\_weapons::givePistol();
+					maps\mp\gametypes\_weapons::giveGrenades();
+				}
+			}
+			else
+			{
+				self.spawned = undefined;
+				spawnPlayer();
+				self thread printJoinedTeam(self.pers["team"]);
+			}
+		} // else if joining an empty team, spawn and check for match start
+		else if(!level.didexist[self.pers["team"]] && !level.roundended)
+		{
+			self.spawned = undefined;
+			spawnPlayer();
+			self thread printJoinedTeam(self.pers["team"]);
+			level checkMatchStart();
+		} // else you will spawn with selected weapon next round
+		else
+		{
+			weaponname = maps\mp\gametypes\_weapons::getWeaponName(self.pers["weapon"]);
+
+			if(self.pers["team"] == "allies")
+			{
+				if(maps\mp\gametypes\_weapons::useAn(self.pers["weapon"]))
+					self iprintln(&"MP_YOU_WILL_SPAWN_ALLIED_WITH_AN_NEXT_ROUND", weaponname);
+				else
+					self iprintln(&"MP_YOU_WILL_SPAWN_ALLIED_WITH_A_NEXT_ROUND", weaponname);
+			}
+			else if(self.pers["team"] == "axis")
+			{
+				if(maps\mp\gametypes\_weapons::useAn(self.pers["weapon"]))
+					self iprintln(&"MP_YOU_WILL_SPAWN_AXIS_WITH_AN_NEXT_ROUND", weaponname);
+				else
+					self iprintln(&"MP_YOU_WILL_SPAWN_AXIS_WITH_A_NEXT_ROUND", weaponname);
+			}
+		}
 	}
 
 	self thread maps\mp\gametypes\_spectating::setSpectatePermissions();
